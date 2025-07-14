@@ -1,0 +1,13 @@
+.idea/
+.vscode/
+bin/
+config/
+build/
+dist/
+logs/
+pid/
+data/
+.DS_Store
+.env
+*.log
+config.toml
