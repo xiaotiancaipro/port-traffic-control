@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"port-traffic-control/internal/configs"
+	"port-traffic-control/internal/controllers"
 	"port-traffic-control/internal/extensions"
 	"port-traffic-control/internal/logger"
 	"port-traffic-control/internal/middlewares"
@@ -55,10 +56,11 @@ func (Start) run(cmd *cobra.Command, _ []string) {
 	server := gin.Default()
 
 	util := utils.New(log)
+	controller := controllers.New(log, ext, util)
 
 	middleware := middlewares.New(log, config, util)
 	middleware.Mount(server)
 
-	_, _ = ext, server // TODO
+	_, _, _ = ext, server, controller // TODO
 
 }
