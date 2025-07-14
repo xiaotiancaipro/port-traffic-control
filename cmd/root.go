@@ -22,6 +22,7 @@ func (r Root) cmd() *cobra.Command {
 		Run:   r.run,
 	}
 	root.Version{}.Init(command)
+	root.Start{}.Init(command)
 	return command
 }
 
