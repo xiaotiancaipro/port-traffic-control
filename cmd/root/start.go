@@ -7,6 +7,7 @@ import (
 	"port-traffic-control/internal/configs"
 	"port-traffic-control/internal/extensions"
 	"port-traffic-control/internal/logger"
+	"port-traffic-control/internal/utils"
 )
 
 type Start struct{}
@@ -52,6 +53,8 @@ func (Start) run(cmd *cobra.Command, _ []string) {
 	}
 	server := gin.Default()
 
-	_, _ = ext, server // TODO
+	util := utils.New(log)
+
+	_, _, _ = ext, server, util // TODO
 
 }
