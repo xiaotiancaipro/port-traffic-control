@@ -5,10 +5,14 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"port-traffic-control/internal/configs"
+	"port-traffic-control/internal/models"
 	"time"
 )
 
-var Tables = map[string]any{}
+var Tables = map[string]any{
+	"groups": models.Groups{},
+	"ports":  models.Ports{},
+}
 
 func NewDB(config *configs.DatabaseConfig) (db *gorm.DB, err error) {
 
