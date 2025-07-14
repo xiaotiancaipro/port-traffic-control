@@ -11,6 +11,7 @@ import (
 	"port-traffic-control/internal/logger"
 	"port-traffic-control/internal/middlewares"
 	"port-traffic-control/internal/routers"
+	"port-traffic-control/internal/services"
 	"port-traffic-control/internal/utils"
 )
 
@@ -58,7 +59,8 @@ func (Start) run(cmd *cobra.Command, _ []string) {
 	server := gin.Default()
 
 	util := utils.New(log)
-	controller := controllers.New(log, ext, util)
+	service := services.New(log, ext, util)
+	controller := controllers.New(log, service, util)
 
 	middleware := middlewares.New(log, config, util)
 	middleware.Mount(server)
