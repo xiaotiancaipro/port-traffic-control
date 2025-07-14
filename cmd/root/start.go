@@ -1,6 +1,7 @@
 package root
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"port-traffic-control/internal/extensions"
 	"port-traffic-control/internal/logger"
 	"port-traffic-control/internal/middlewares"
+	"port-traffic-control/internal/routers"
 	"port-traffic-control/internal/utils"
 )
 
@@ -61,6 +63,16 @@ func (Start) run(cmd *cobra.Command, _ []string) {
 	middleware := middlewares.New(log, config, util)
 	middleware.Mount(server)
 
-	_, _, _ = ext, server, controller // TODO
+	router := routers.New(controller)
+	router.Mount(server)
+
+	addr := fmt.Sprintf("%s:%d", config.API.Host, config.API.Port)
+	log.Infof("Service started, Address=%s", addr)
+	if err = server.Run(addr); err != nil {
+		errInfo := fmt.Sprintf("Service startup failed, Error=%v", err)
+		log.Error(errInfo)
+		cmd.PrintErrf("%s\n", errInfo)
+		os.Exit(1)
+	}
 
 }
