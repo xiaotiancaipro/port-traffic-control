@@ -13,6 +13,7 @@ func New() (config *Configuration, err error) {
 			Env:       getEnv("PORT_TC_API_ENV", "production"),
 			LogPath:   getEnv("PORT_TC_API_LOG_PATH", "./logs"),
 			LogPrefix: getEnv("PORT_TC_API_LOG_PREFIX", "api"),
+			AccessKey: getEnv("PORT_TC_API_ACCESS_KEY", "port-traffic-control"),
 		},
 		Database: &DatabaseConfig{
 			Path: getEnv("PORT_TC_DATABASE_PATH", "./data/data.db"),

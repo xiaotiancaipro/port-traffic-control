@@ -11,6 +11,7 @@ type APIConfig struct {
 	Env       string
 	LogPath   string
 	LogPrefix string
+	AccessKey string
 }
 
 type DatabaseConfig struct {
