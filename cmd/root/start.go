@@ -7,6 +7,7 @@ import (
 	"port-traffic-control/internal/configs"
 	"port-traffic-control/internal/extensions"
 	"port-traffic-control/internal/logger"
+	"port-traffic-control/internal/middlewares"
 	"port-traffic-control/internal/utils"
 )
 
@@ -55,6 +56,9 @@ func (Start) run(cmd *cobra.Command, _ []string) {
 
 	util := utils.New(log)
 
-	_, _, _ = ext, server, util // TODO
+	middleware := middlewares.New(log, config, util)
+	middleware.Mount(server)
+
+	_, _ = ext, server // TODO
 
 }
