@@ -46,6 +46,7 @@ func (Start) run(cmd *cobra.Command, _ []string) {
 	}
 
 	ext, err := extensions.New(config)
+	defer ext.Close()
 	if err != nil {
 		cmd.PrintErrf("Middleware loading failed, Error=%v\n", err)
 		os.Exit(1)

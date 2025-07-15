@@ -18,6 +18,9 @@ func New() (config *Configuration, err error) {
 		Database: &DatabaseConfig{
 			Path: getEnv("PORT_TC_DATABASE_PATH", "./data/data.db"),
 		},
+		TC: &TCConfig{
+			InterfaceName: getEnv("PORT_TC_TC_INTERFACE_NAME", "eth0"),
+		},
 	}
 	portStr := getEnv("PORT_TC_API_PORT", "6001")
 	port, err := strconv.Atoi(portStr)

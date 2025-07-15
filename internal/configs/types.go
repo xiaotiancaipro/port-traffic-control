@@ -3,6 +3,7 @@ package configs
 type Configuration struct {
 	API      *APIConfig
 	Database *DatabaseConfig
+	TC       *TCConfig
 }
 
 type APIConfig struct {
@@ -16,4 +17,8 @@ type APIConfig struct {
 
 type DatabaseConfig struct {
 	Path string
+}
+
+type TCConfig struct {
+	InterfaceName string
 }
