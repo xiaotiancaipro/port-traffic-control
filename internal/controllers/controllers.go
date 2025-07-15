@@ -13,5 +13,13 @@ func New(log *logger.Log, service *services.Services, util *utils.Utils) *Contro
 			HealthService: service.HealthService,
 			ResponseUtil:  util.ResponseUtil,
 		},
+		GroupsController: &GroupsController{
+			Log:           log,
+			GroupsService: service.GroupsService,
+		},
+		PortsController: &PortsController{
+			Log:          log,
+			PortsService: service.PortsService,
+		},
 	}
 }
