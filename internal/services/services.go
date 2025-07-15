@@ -13,5 +13,13 @@ func New(log *logger.Log, ext *extensions.Extensions, util *utils.Utils) *Servic
 			DB:         ext.Database,
 			StringUtil: util.StringUtil,
 		},
+		GroupsService: &GroupsService{
+			Log: log,
+			DB:  ext.Database,
+		},
+		PortsService: &PortsService{
+			Log: log,
+			DB:  ext.Database,
+		},
 	}
 }
