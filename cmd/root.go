@@ -18,7 +18,7 @@ func (r Root) Init() *cobra.Command {
 func (r Root) cmd() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "port-traffic-control",
-		Short: "port-traffic-control launcher",
+		Short: "Linux system port traffic control API interface server",
 		Run:   r.run,
 	}
 	root.Version{}.Init(command)

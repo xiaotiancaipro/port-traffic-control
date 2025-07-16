@@ -21,5 +21,5 @@ func (v Version) cmd() *cobra.Command {
 }
 
 func (Version) run(cmd *cobra.Command, _ []string) {
-	cmd.Printf("port-traffic-control v%s\n", version)
+	cmd.Printf("Version: v%s\n", version)
 }
