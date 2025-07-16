@@ -14,6 +14,8 @@ func New() (config *Configuration, err error) {
 			LogPath:   getEnvString("PTC_API_LOG_PATH", "./logs"),
 			LogPrefix: getEnvString("PTC_API_LOG_PREFIX", "api"),
 			AccessKey: getEnvString("PTC_API_ACCESS_KEY", "port-traffic-control"),
+			PIDPath:   getEnvString("PTC_API_PID_PATH", "./pid"),
+			PIDFile:   getEnvString("PTC_API_PID_FILE", "api.pid"),
 		},
 		Database: &DatabaseConfig{
 			Path: getEnvString("PTC_DATABASE_PATH", "./data/data.db"),

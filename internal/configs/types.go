@@ -13,6 +13,8 @@ type APIConfig struct {
 	LogPath   string
 	LogPrefix string
 	AccessKey string
+	PIDPath   string
+	PIDFile   string
 }
 
 type DatabaseConfig struct {

@@ -2,17 +2,18 @@ package root
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
 	"os"
+	"os/signal"
+	"path/filepath"
 	"port-traffic-control/internal/configs"
 	"port-traffic-control/internal/controllers"
 	"port-traffic-control/internal/extensions"
 	"port-traffic-control/internal/logger"
-	"port-traffic-control/internal/middlewares"
-	"port-traffic-control/internal/routers"
 	"port-traffic-control/internal/services"
+	"port-traffic-control/internal/srv"
 	"port-traffic-control/internal/utils"
+	"syscall"
 )
 
 type Start struct{}
@@ -45,6 +46,33 @@ func (Start) run(cmd *cobra.Command, _ []string) {
 		os.Exit(1)
 	}
 
+	util := utils.New(log)
+
+	pidFile := filepath.Join(config.API.PIDPath, config.API.PIDFile)
+	if _, err = os.Stat(pidFile); !os.IsNotExist(err) {
+		pid, err_ := util.ProcessUtil.CheckRunning(pidFile)
+		if err_ != nil {
+			cmd.PrintErrf("服务已在运行中, PID=%d\n", pid)
+			os.Exit(1)
+		}
+		cmd.PrintErrf("服务未运行, 但进程文件已存在, PIDFile=%s\n", pidFile)
+		os.Exit(1)
+	}
+
+	if _, err = os.Stat(config.API.PIDPath); os.IsNotExist(err) {
+		if err_ := os.Mkdir(config.API.PIDPath, 0755); err_ != nil {
+			cmd.PrintErrf("创建路径失败, Path=%s, Error=%v\n", config.API.PIDPath, err_)
+			os.Exit(1)
+		}
+	}
+
+	pid := os.Getpid()
+	if err_ := util.ProcessUtil.WritePIDFile(pidFile, pid); err_ != nil {
+		cmd.PrintErrf("写入 PID 文件失败, Error=%v\n", err_)
+		os.Exit(1)
+	}
+	defer func() { _ = os.Remove(pidFile) }()
+
 	ext, err := extensions.New(config)
 	if err != nil {
 		cmd.PrintErrf("Middleware loading failed, Error=%v\n", err)
@@ -57,30 +85,29 @@ func (Start) run(cmd *cobra.Command, _ []string) {
 		}
 	}()
 
-	gin.SetMode(gin.ReleaseMode)
-	if config.API.Env != "production" {
-		gin.SetMode(gin.DebugMode)
-		log.Warning("The current service is in debug mode")
-	}
-	server := gin.Default()
-
-	util := utils.New(log)
 	service := services.New(log, ext, util)
+
 	controller := controllers.New(log, service, util)
 
-	middleware := middlewares.New(log, config, util)
-	middleware.Mount(server)
-
-	router := routers.New(controller)
-	router.Mount(server)
-
-	addr := fmt.Sprintf("%s:%d", config.API.Host, config.API.Port)
-	log.Infof("Service started, Address=%s", addr)
-	if err = server.Run(addr); err != nil {
-		errInfo := fmt.Sprintf("Service startup failed, Error=%v", err)
-		log.Error(errInfo)
-		cmd.PrintErrf("%s\n", errInfo)
+	server := srv.New(config, log, controller, util)
+	if err = server.Start(); err != nil {
+		cmd.PrintErrf("Failed to start server, Error=%v\n", err)
 		os.Exit(1)
 	}
+	cmd.Printf("Service started, Address=%s", server.Server.Addr)
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+	sig := <-sigCh
+	info := fmt.Sprintf("Received shutdown signal, service is shutting down, SIG=%v", sig)
+	log.Info(info)
+	cmd.Println(info)
+
+	if err = server.Stop(); err != nil {
+		cmd.PrintErrf("Failed to stop server, Error=%v\n", err)
+		os.Exit(1)
+	}
+	cmd.Println("Server stopped")
 
 }

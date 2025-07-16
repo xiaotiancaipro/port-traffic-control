@@ -23,6 +23,7 @@ func (r Root) cmd() *cobra.Command {
 	}
 	root.Version{}.Init(command)
 	root.Start{}.Init(command)
+	root.Stop{}.Init(command)
 	return command
 }
 
