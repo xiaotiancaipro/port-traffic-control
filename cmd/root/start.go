@@ -52,26 +52,26 @@ func (Start) run(cmd *cobra.Command, _ []string) {
 	if _, err = os.Stat(pidFile); !os.IsNotExist(err) {
 		pid, err_ := util.ProcessUtil.CheckRunning(pidFile)
 		if err_ != nil {
-			cmd.PrintErrf("服务已在运行中, PID=%d\n", pid)
+			cmd.PrintErrf("Service already running, PID=%d\n", pid)
 			os.Exit(1)
 		}
-		cmd.PrintErrf("服务未运行, 但进程文件已存在, PIDFile=%s\n", pidFile)
+		cmd.PrintErrf("The service is not running, but the process file exists, PIDFile=%s\n", pidFile)
 		os.Exit(1)
 	}
 
 	if _, err = os.Stat(config.API.PIDPath); os.IsNotExist(err) {
 		if err_ := os.Mkdir(config.API.PIDPath, 0755); err_ != nil {
-			cmd.PrintErrf("创建路径失败, Path=%s, Error=%v\n", config.API.PIDPath, err_)
+			cmd.PrintErrf("Failed to create path, Path=%s, Error=%v\n", config.API.PIDPath, err_)
 			os.Exit(1)
 		}
 	}
 
-	pid := os.Getpid()
-	if err_ := util.ProcessUtil.WritePIDFile(pidFile, pid); err_ != nil {
-		cmd.PrintErrf("写入 PID 文件失败, Error=%v\n", err_)
-		os.Exit(1)
+	if _, err = os.Stat(config.Database.Path); os.IsNotExist(err) {
+		if err_ := os.Mkdir(config.Database.Path, 0755); err_ != nil {
+			cmd.PrintErrf("Failed to create path, Path=%s, Error=%v\n", config.Database.Path, err_)
+			os.Exit(1)
+		}
 	}
-	defer func() { _ = os.Remove(pidFile) }()
 
 	ext, err := extensions.New(config)
 	if err != nil {
@@ -92,6 +92,13 @@ func (Start) run(cmd *cobra.Command, _ []string) {
 	server := srv.New(config, log, controller, util)
 	server.Start()
 	cmd.Printf("Server started successfully, Address=%s\n", server.Server.Addr)
+
+	pid := os.Getpid()
+	if err_ := util.ProcessUtil.WritePIDFile(pidFile, pid); err_ != nil {
+		cmd.PrintErrf("Failed to write PID file, Error=%v\n", err_)
+		os.Exit(1)
+	}
+	defer func() { _ = os.Remove(pidFile) }()
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
