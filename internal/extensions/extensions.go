@@ -28,6 +28,10 @@ func New(config *configs.Configuration) (ext *Extensions, err error) {
 
 }
 
-func (ext *Extensions) Close() {
-	_ = ext.TC.Close()
+func (ext *Extensions) Close() error {
+	err := ext.TC.CloseTC()
+	if err != nil {
+		return fmt.Errorf("failed to close the TC, Error=%v", err)
+	}
+	return nil
 }

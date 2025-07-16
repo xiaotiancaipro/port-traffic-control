@@ -9,42 +9,76 @@ import (
 	"port-traffic-control/internal/configs"
 )
 
-func NewTC(config *configs.TCConfig) (tc_ *tc.Tc, err error) {
+func NewTC(config *configs.TCConfig) (tc_ *TC, err error) {
 
 	iface, err := net.InterfaceByName(config.InterfaceName)
 	if err != nil {
-		err = fmt.Errorf("failed to obtain the interface, Error=%v", err)
+		err = fmt.Errorf("failed to obtain interface '%s': %v", config.InterfaceName, err)
+		return
+	}
+	if iface.Flags&net.FlagUp == 0 {
+		err = fmt.Errorf("interface '%s' is not up", config.InterfaceName)
 		return
 	}
 
-	tc_, err = tc.Open(&tc.Config{})
+	connect, err := tc.Open(&tc.Config{})
 	if err != nil {
-		err = fmt.Errorf("failed to open TC, Error=%v", err)
+		err = fmt.Errorf("failed to open TC connection: %v", err)
 		return
 	}
 
-	rootQdisc := tc.Object{
+	exists := tc.Object{
 		Msg: tc.Msg{
 			Family:  unix.AF_UNSPEC,
 			Ifindex: uint32(iface.Index),
-			Handle:  core.BuildHandle(0xFFFF, 0),
+			Handle:  core.BuildHandle(0x1, 0x0),
 			Parent:  tc.HandleRoot,
+		},
+	}
+	_ = connect.Qdisc().Delete(&exists)
+
+	root := &tc.Object{
+		Msg: tc.Msg{
+			Family:  unix.AF_UNSPEC,
+			Ifindex: uint32(iface.Index),
+			Handle:  core.BuildHandle(0x1, 0x0),
+			Parent:  tc.HandleRoot,
+			Info:    0,
 		},
 		Attribute: tc.Attribute{
 			Kind: "htb",
 			Htb: &tc.Htb{
 				Init: &tc.HtbGlob{
-					Rate2Quantum: 10,
+					Version:      config.HTBVersion,
+					Rate2Quantum: config.Rate2Quantum,
 				},
 			},
 		},
 	}
-	if err = tc_.Qdisc().Add(&rootQdisc); err != nil {
-		_ = tc_.Close()
-		err = fmt.Errorf("failed to add Qdisc, Error=%v", err)
+	err = connect.Qdisc().Replace(root)
+	if err != nil {
+		_ = connect.Close()
+		err = fmt.Errorf("failed to create HTB qdisc: %v", err)
 		return
 	}
 
+	tc_ = &TC{
+		TC_:  connect,
+		Root: root,
+	}
 	return
 
+}
+
+func (tc_ *TC) CloseTC() error {
+	if tc_ == nil {
+		return nil
+	}
+	if err := tc_.TC_.Qdisc().Delete(tc_.Root); err != nil {
+		return fmt.Errorf("failed to delete Qdisc: %v", err)
+	}
+	if err := tc_.TC_.Close(); err != nil {
+		return fmt.Errorf("failed to close TC: %v", err)
+	}
+	return nil
 }

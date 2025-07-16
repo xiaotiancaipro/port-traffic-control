@@ -46,11 +46,16 @@ func (Start) run(cmd *cobra.Command, _ []string) {
 	}
 
 	ext, err := extensions.New(config)
-	defer ext.Close()
 	if err != nil {
 		cmd.PrintErrf("Middleware loading failed, Error=%v\n", err)
 		os.Exit(1)
 	}
+	defer func() {
+		if err_ := ext.Close(); err_ != nil {
+			cmd.PrintErrf("Failed to close extension, Error=%v\n", err_)
+			os.Exit(1)
+		}
+	}()
 
 	gin.SetMode(gin.ReleaseMode)
 	if config.API.Env != "production" {

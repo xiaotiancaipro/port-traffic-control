@@ -1,7 +1,6 @@
 package configs
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 )
@@ -9,32 +8,49 @@ import (
 func New() (config *Configuration, err error) {
 	config = &Configuration{
 		API: &APIConfig{
-			Host:      getEnv("PORT_TC_API_HOST", "127.0.0.1"),
-			Env:       getEnv("PORT_TC_API_ENV", "production"),
-			LogPath:   getEnv("PORT_TC_API_LOG_PATH", "./logs"),
-			LogPrefix: getEnv("PORT_TC_API_LOG_PREFIX", "api"),
-			AccessKey: getEnv("PORT_TC_API_ACCESS_KEY", "port-traffic-control"),
+			Host:      getEnvString("PTC_API_HOST", "127.0.0.1"),
+			Port:      getEnvUint32("PTC_API_PORT", 5001),
+			Env:       getEnvString("PTC_API_ENV", "production"),
+			LogPath:   getEnvString("PTC_API_LOG_PATH", "./logs"),
+			LogPrefix: getEnvString("PTC_API_LOG_PREFIX", "api"),
+			AccessKey: getEnvString("PTC_API_ACCESS_KEY", "port-traffic-control"),
 		},
 		Database: &DatabaseConfig{
-			Path: getEnv("PORT_TC_DATABASE_PATH", "./data/data.db"),
+			Path: getEnvString("PTC_DATABASE_PATH", "./data/data.db"),
 		},
 		TC: &TCConfig{
-			InterfaceName: getEnv("PORT_TC_TC_INTERFACE_NAME", "eth0"),
+			InterfaceName:  getEnvString("PTC_TC_INTERFACE_NAME", "eth0"),
+			HTBVersion:     getEnvUint32("PTC_TC_HTB_VERSION", 3),
+			Rate2Quantum:   getEnvUint32("PTC_TC_RATE2QUANTUM", 10),
+			DefaultClassID: getEnvUint32("PTC_TC_DEFAULT_CLASS_ID", 1),
+			EnableLogging:  getEnvBool("PTC_TC_ENABLE_LOGGING", false),
+			LogLevel:       getEnvString("PTC_TC_LOG_LEVEL", "info"),
 		},
 	}
-	portStr := getEnv("PORT_TC_API_PORT", "6001")
-	port, err := strconv.Atoi(portStr)
-	if err != nil || port < 1 || port > 65535 {
-		err = fmt.Errorf("invalid port %s", portStr)
-		return
-	}
-	config.API.Port = port
 	return
 }
 
-func getEnv(key, defaultValue string) string {
+func getEnvString(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
+	}
+	return defaultValue
+}
+
+func getEnvUint32(key string, defaultValue uint32) uint32 {
+	if value := os.Getenv(key); value != "" {
+		if parsed, err := strconv.ParseUint(value, 10, 32); err == nil {
+			return uint32(parsed)
+		}
+	}
+	return defaultValue
+}
+
+func getEnvBool(key string, defaultValue bool) bool {
+	if value := os.Getenv(key); value != "" {
+		if parsed, err := strconv.ParseBool(value); err == nil {
+			return parsed
+		}
 	}
 	return defaultValue
 }

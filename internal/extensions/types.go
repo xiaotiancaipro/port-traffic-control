@@ -7,5 +7,10 @@ import (
 
 type Extensions struct {
 	Database *gorm.DB
-	TC       *tc.Tc
+	TC       *TC
+}
+
+type TC struct {
+	TC_  *tc.Tc
+	Root *tc.Object
 }
