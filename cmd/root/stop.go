@@ -65,13 +65,13 @@ func (Stop) run(cmd *cobra.Command, _ []string) {
 		cmd.PrintErrf("Failed to send close signal, PID=%d, Error=%v\n", pid, err_)
 		os.Exit(1)
 	}
-	cmd.Printf("Close signal sent successfully, PID=%d\n", pid)
+	cmd.Printf("Shutdown signal sent successfully, PID=%d\n", pid)
 
 	startTime := time.Now()
 	for {
 		pid, err = processUtil.CheckRunning(pidFile)
 		if err != nil {
-			cmd.Printf("Stop Success, TimeConsumed=%v\n", time.Since(startTime))
+			cmd.Printf("Server stopped successfully, TimeConsumed=%v\n", time.Since(startTime))
 			return
 		}
 		time.Sleep(200 * time.Millisecond)

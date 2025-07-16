@@ -90,11 +90,8 @@ func (Start) run(cmd *cobra.Command, _ []string) {
 	controller := controllers.New(log, service, util)
 
 	server := srv.New(config, log, controller, util)
-	if err = server.Start(); err != nil {
-		cmd.PrintErrf("Failed to start server, Error=%v\n", err)
-		os.Exit(1)
-	}
-	cmd.Printf("Service started, Address=%s", server.Server.Addr)
+	server.Start()
+	cmd.Printf("Server started successfully, Address=%s\n", server.Server.Addr)
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
@@ -108,6 +105,6 @@ func (Start) run(cmd *cobra.Command, _ []string) {
 		cmd.PrintErrf("Failed to stop server, Error=%v\n", err)
 		os.Exit(1)
 	}
-	cmd.Println("Server stopped")
+	cmd.Println("Server stopped successfully")
 
 }

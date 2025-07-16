@@ -2,7 +2,6 @@ package srv
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -37,28 +36,18 @@ func New(config *configs.Configuration, log *logger.Log, controller *controllers
 	}
 
 	return &Srv{
-		Config:    config.API,
-		Log:       log,
-		Server:    server,
-		ServerErr: make(chan error),
+		Config: config.API,
+		Log:    log,
+		Server: server,
 	}
 
 }
 
-func (s *Srv) Start() error {
+func (s *Srv) Start() {
 	go func() {
-		err := s.Server.ListenAndServe()
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			s.ServerErr <- err
-		}
+		_ = s.Server.ListenAndServe()
 	}()
-	if s.ServerErr != nil {
-		err := fmt.Errorf("server start error, Error=%s", <-s.ServerErr)
-		s.Log.Error(err)
-		return err
-	}
-	s.Log.Infof("Service started, Address=%s", s.Server.Addr)
-	return nil
+	s.Log.Infof("Server started successfully, Address=%s", s.Server.Addr)
 }
 
 func (s *Srv) Stop() error {
@@ -69,6 +58,6 @@ func (s *Srv) Stop() error {
 		s.Log.Error(err)
 		return err
 	}
-	s.Log.Infof("Server stopped")
+	s.Log.Infof("Server stopped successfully")
 	return nil
 }

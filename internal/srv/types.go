@@ -7,8 +7,7 @@ import (
 )
 
 type Srv struct {
-	Config    *configs.APIConfig
-	Log       *logger.Log
-	Server    *http.Server
-	ServerErr chan error
+	Config *configs.APIConfig
+	Log    *logger.Log
+	Server *http.Server
 }
