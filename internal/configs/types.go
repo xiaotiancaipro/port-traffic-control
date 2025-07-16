@@ -19,6 +19,7 @@ type APIConfig struct {
 
 type DatabaseConfig struct {
 	Path string
+	File string
 }
 
 type TCConfig struct {

@@ -18,7 +18,8 @@ func New() (config *Configuration, err error) {
 			PIDFile:   getEnvString("PTC_API_PID_FILE", "api.pid"),
 		},
 		Database: &DatabaseConfig{
-			Path: getEnvString("PTC_DATABASE_PATH", "./data/data.db"),
+			Path: getEnvString("PTC_DATABASE_PATH", "./data"),
+			File: getEnvString("PTC_DATABASE_FILE", "./data.db"),
 		},
 		TC: &TCConfig{
 			InterfaceName:  getEnvString("PTC_TC_INTERFACE_NAME", "eth0"),

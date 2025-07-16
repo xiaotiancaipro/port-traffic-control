@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"path/filepath"
 	"port-traffic-control/internal/configs"
 	"port-traffic-control/internal/models"
 	"time"
@@ -16,7 +17,8 @@ var Tables = map[string]any{
 
 func NewDB(config *configs.DatabaseConfig) (db *gorm.DB, err error) {
 
-	db, err = gorm.Open(sqlite.Open(config.Path), &gorm.Config{})
+	file := filepath.Join(config.Path, config.File)
+	db, err = gorm.Open(sqlite.Open(file), &gorm.Config{})
 	if err != nil {
 		err = fmt.Errorf("database connection failed, Error=%v", err)
 		return
