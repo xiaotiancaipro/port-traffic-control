@@ -21,9 +21,12 @@ type HealthController struct {
 type GroupsController struct {
 	Log           *logger.Log
 	GroupsService *services.GroupsService
+	TCService     *services.TCService
+	ResponseUtil  *utils.ResponseUtil
 }
 
 type PortsController struct {
 	Log          *logger.Log
 	PortsService *services.PortsService
+	ResponseUtil *utils.ResponseUtil
 }

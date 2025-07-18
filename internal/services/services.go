@@ -1,12 +1,13 @@
 package services
 
 import (
+	"port-traffic-control/internal/configs"
 	"port-traffic-control/internal/extensions"
 	"port-traffic-control/internal/logger"
 	"port-traffic-control/internal/utils"
 )
 
-func New(log *logger.Log, ext *extensions.Extensions, util *utils.Utils) *Services {
+func New(config *configs.Configuration, log *logger.Log, ext *extensions.Extensions, util *utils.Utils) *Services {
 	return &Services{
 		HealthService: &HealthService{
 			Log:        log,
@@ -20,6 +21,13 @@ func New(log *logger.Log, ext *extensions.Extensions, util *utils.Utils) *Servic
 		PortsService: &PortsService{
 			Log: log,
 			DB:  ext.Database,
+		},
+		TCService: &TCService{
+			Config:     config.TC,
+			Log:        log,
+			TC:         ext.TC.TC_,
+			Iface:      ext.TC.Iface,
+			HandleRoot: ext.TC.HandleRoot,
 		},
 	}
 }

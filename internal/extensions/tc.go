@@ -41,7 +41,7 @@ func NewTC(config *configs.TCConfig) (tc_ *TC, err error) {
 		Msg: tc.Msg{
 			Family:  unix.AF_UNSPEC,
 			Ifindex: uint32(iface.Index),
-			Handle:  core.BuildHandle(0x1, 0x0),
+			Handle:  core.BuildHandle(0xFFFF, 0x0),
 			Parent:  tc.HandleRoot,
 			Info:    0,
 		},
@@ -63,8 +63,10 @@ func NewTC(config *configs.TCConfig) (tc_ *TC, err error) {
 	}
 
 	tc_ = &TC{
-		TC_:  connect,
-		Root: root,
+		TC_:        connect,
+		Iface:      iface,
+		ObjectRoot: root,
+		HandleRoot: core.BuildHandle(0xFFFF, 0x0),
 	}
 	return
 
@@ -74,7 +76,7 @@ func (tc_ *TC) CloseTC() error {
 	if tc_ == nil {
 		return nil
 	}
-	if err := tc_.TC_.Qdisc().Delete(tc_.Root); err != nil {
+	if err := tc_.TC_.Qdisc().Delete(tc_.ObjectRoot); err != nil {
 		return fmt.Errorf("failed to delete Qdisc: %v", err)
 	}
 	if err := tc_.TC_.Close(); err != nil {

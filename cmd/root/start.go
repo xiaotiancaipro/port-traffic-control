@@ -85,7 +85,7 @@ func (Start) run(cmd *cobra.Command, _ []string) {
 		}
 	}()
 
-	service := services.New(log, ext, util)
+	service := services.New(config, log, ext, util)
 
 	controller := controllers.New(log, service, util)
 

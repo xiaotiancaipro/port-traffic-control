@@ -6,7 +6,8 @@ import (
 )
 
 const (
-	HealthRouter = "/health"
+	Health = "/health"
+	Groups = "/groups"
 )
 
 func New(controller *controllers.Controllers) *Routers {
@@ -17,9 +18,14 @@ func New(controller *controllers.Controllers) *Routers {
 
 func (r *Routers) Mount(engine *gin.Engine) {
 
-	health := engine.Group(HealthRouter)
+	health := engine.Group(Health)
 	{
 		health.GET("/", r.HealthController.Health)
+	}
+
+	groups := engine.Group(Groups)
+	{
+		groups.POST("/create", r.GroupsController.Create)
 	}
 
 }
