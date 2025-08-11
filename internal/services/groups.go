@@ -3,8 +3,9 @@ package services
 import (
 	"errors"
 	"fmt"
-	"gorm.io/gorm"
 	"port-traffic-control/internal/models"
+
+	"gorm.io/gorm"
 )
 
 var GroupNotFoundError = fmt.Errorf("group not found")
@@ -21,11 +22,11 @@ func (gs *GroupsService) Create(bandwidth int32, portMaxNum int32) (groups model
 	gs.Lock.Lock()
 	defer gs.Lock.Unlock()
 
-	newHandle := -1
-	var handleMaxGroups models.Groups
+	var handleMaxGroups *models.Groups
 	tx := gs.DB.
 		Model(&models.Groups{}).
-		Order("created_at desc").
+		Where("status != ?", 0).
+		Order("handle desc").
 		First(&handleMaxGroups)
 	if err = tx.Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -33,14 +34,15 @@ func (gs *GroupsService) Create(bandwidth int32, portMaxNum int32) (groups model
 			gs.Log.Error(err)
 			return
 		}
-		newHandle = 0
 	}
-	if newHandle < 0 {
-		newHandle = int(handleMaxGroups.Handle + 1)
+
+	newHandle := int32(1)
+	if handleMaxGroups != nil {
+		newHandle = handleMaxGroups.Handle + 1
 	}
 
 	groups = models.Groups{
-		Handle:     int32(newHandle),
+		Handle:     newHandle,
 		Bandwidth:  bandwidth,
 		PortMaxNum: portMaxNum,
 	}
@@ -62,19 +64,19 @@ func (gs *GroupsService) Create(bandwidth int32, portMaxNum int32) (groups model
 
 }
 
-func (gs *GroupsService) Delete(groups models.Groups) error {
+func (gs *GroupsService) UpdateStatus(groups models.Groups, status int8) error {
 	err := gs.DB.Transaction(func(tx *gorm.DB) error {
 		tx_ := tx.
 			Model(&models.Groups{}).
 			Where(&models.Groups{
 				ID: groups.ID,
 			}).
-			Select("Status").
+			Select("status").
 			Updates(&models.Groups{
-				Status: 0,
+				Status: status,
 			})
 		if err_ := tx_.Error; err_ != nil {
-			return fmt.Errorf("failed to delete data, Errors=%v", err_)
+			return fmt.Errorf("failed to update data, Errors=%v", err_)
 		}
 		return nil
 	})
@@ -83,4 +85,8 @@ func (gs *GroupsService) Delete(groups models.Groups) error {
 		return err
 	}
 	return nil
+}
+
+func (gs *GroupsService) Delete(groups models.Groups) error {
+	return gs.UpdateStatus(groups, 0)
 }

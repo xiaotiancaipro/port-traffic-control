@@ -2,11 +2,12 @@ package extensions
 
 import (
 	"fmt"
+	"net"
+	"port-traffic-control/internal/configs"
+
 	"github.com/florianl/go-tc"
 	"github.com/florianl/go-tc/core"
 	"golang.org/x/sys/unix"
-	"net"
-	"port-traffic-control/internal/configs"
 )
 
 func NewTC(config *configs.TCConfig) (tc_ *TC, err error) {
@@ -27,11 +28,13 @@ func NewTC(config *configs.TCConfig) (tc_ *TC, err error) {
 		return
 	}
 
+	rootHandle := core.BuildHandle(0x1, 0x0)
+
 	exists := tc.Object{
 		Msg: tc.Msg{
 			Family:  unix.AF_UNSPEC,
 			Ifindex: uint32(iface.Index),
-			Handle:  core.BuildHandle(0x1, 0x0),
+			Handle:  rootHandle,
 			Parent:  tc.HandleRoot,
 		},
 	}
@@ -41,7 +44,7 @@ func NewTC(config *configs.TCConfig) (tc_ *TC, err error) {
 		Msg: tc.Msg{
 			Family:  unix.AF_UNSPEC,
 			Ifindex: uint32(iface.Index),
-			Handle:  core.BuildHandle(0xFFFF, 0x0),
+			Handle:  rootHandle,
 			Parent:  tc.HandleRoot,
 			Info:    0,
 		},
@@ -66,7 +69,7 @@ func NewTC(config *configs.TCConfig) (tc_ *TC, err error) {
 		TC_:        connect,
 		Iface:      iface,
 		ObjectRoot: root,
-		HandleRoot: core.BuildHandle(0xFFFF, 0x0),
+		HandleRoot: rootHandle,
 	}
 	return
 

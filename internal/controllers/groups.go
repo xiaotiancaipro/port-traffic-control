@@ -32,6 +32,13 @@ func (gc *GroupsController) Create(c *gin.Context) {
 		return
 	}
 
+	err = gc.GroupsService.UpdateStatus(groups, 1)
+	if err != nil {
+		gc.Log.Error("Error updating status")
+		gc.ResponseUtil.Error(c, "Error updating status")
+		return
+	}
+
 	gc.Log.Infof("Create groups successfully, GroupsID=%s", groups.ID)
 	gc.ResponseUtil.Success(c, "Create groups successfully", responseBody{Flag: 1})
 	return

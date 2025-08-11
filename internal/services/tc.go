@@ -2,17 +2,21 @@ package services
 
 import (
 	"fmt"
+
 	"github.com/florianl/go-tc"
 	"github.com/florianl/go-tc/core"
 	"golang.org/x/sys/unix"
 )
 
-func (tcs *TCService) CreateParentClass(maj uint32, rate uint32) error {
+// CreateParentClass creates a top-level HTB class under the root qdisc.
+// The provided id is used as the minor id of the class. The major must match the root qdisc.
+func (tcs *TCService) CreateParentClass(minor uint32, rate uint32) error {
+	rate = tcs.MbpsToBps(rate)
 	parentClass := tc.Object{
 		Msg: tc.Msg{
 			Family:  unix.AF_UNSPEC,
 			Ifindex: uint32(tcs.Iface.Index),
-			Handle:  core.BuildHandle(maj, 0),
+			Handle:  core.BuildHandle(0x1, minor),
 			Parent:  tcs.HandleRoot,
 		},
 		Attribute: tc.Attribute{
@@ -49,14 +53,18 @@ func (tcs *TCService) CreateParentClass(maj uint32, rate uint32) error {
 	return nil
 }
 
-func (tcs *TCService) CreateChildClass(majParent uint32, minChild uint32, rate uint32, rateCeil uint32) error {
+// CreateChildClass creates a child HTB class under the specified parent class (by parentMinor).
+func (tcs *TCService) CreateChildClass(parentMinor uint32, childMinor uint32, rate uint32, rateCeil uint32) error {
+
+	rate = tcs.MbpsToBps(rate)
+	rateCeil = tcs.MbpsToBps(rateCeil)
 
 	childClass := tc.Object{
 		Msg: tc.Msg{
 			Family:  unix.AF_UNSPEC,
 			Ifindex: uint32(tcs.Iface.Index),
-			Handle:  core.BuildHandle(majParent, minChild),
-			Parent:  core.BuildHandle(majParent, 0x0),
+			Handle:  core.BuildHandle(parentMinor, childMinor),
+			Parent:  core.BuildHandle(0x1, parentMinor), // TODO
 		},
 		Attribute: tc.Attribute{
 			Kind: "htb",
@@ -66,7 +74,12 @@ func (tcs *TCService) CreateChildClass(majParent uint32, minChild uint32, rate u
 						Rate: rate,
 					},
 					Ceil: tc.RateSpec{
-						Rate: rateCeil,
+						Rate:      rateCeil,
+						CellLog:   3,
+						Linklayer: 1,
+						Overhead:  26,
+						Mpu:       64,
+						CellAlign: 0,
 					},
 					Buffer:  uint32(1),
 					Cbuffer: uint32(1),
@@ -89,7 +102,7 @@ func (tcs *TCService) CreateChildClass(majParent uint32, minChild uint32, rate u
 			Family:  unix.AF_UNSPEC,
 			Ifindex: uint32(tcs.Iface.Index),
 			Handle:  core.BuildHandle(0x0, 0x0),
-			Parent:  core.BuildHandle(majParent, minChild),
+			Parent:  core.BuildHandle(parentMinor, childMinor), // TODO
 		},
 		Attribute: tc.Attribute{
 			Kind: "fq_codel",
@@ -108,4 +121,8 @@ func (tcs *TCService) CreateChildClass(majParent uint32, minChild uint32, rate u
 
 	return nil
 
+}
+
+func (tcs *TCService) MbpsToBps(mbps uint32) uint32 {
+	return mbps * 1_000_000 / 8
 }
