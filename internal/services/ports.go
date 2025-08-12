@@ -2,9 +2,10 @@ package services
 
 import (
 	"fmt"
+	"port-traffic-control/internal/models"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"port-traffic-control/internal/models"
 )
 
 func (ps *PortsService) Create(groupID uuid.UUID, port int32) error {

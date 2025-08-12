@@ -2,7 +2,6 @@ package root
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -14,6 +13,8 @@ import (
 	"port-traffic-control/internal/srv"
 	"port-traffic-control/internal/utils"
 	"syscall"
+
+	"github.com/spf13/cobra"
 )
 
 type Start struct{}

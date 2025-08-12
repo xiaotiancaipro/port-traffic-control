@@ -2,10 +2,11 @@ package logger
 
 import (
 	"fmt"
-	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
-	"github.com/sirupsen/logrus"
 	"strings"
 	"time"
+
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	"github.com/sirupsen/logrus"
 )
 
 func New(path string, prefix string) (log *Log, err error) {

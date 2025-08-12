@@ -1,10 +1,11 @@
 package middlewares
 
 import (
-	"github.com/gin-gonic/gin"
 	"port-traffic-control/internal/configs"
 	"port-traffic-control/internal/logger"
 	"port-traffic-control/internal/utils"
+
+	"github.com/gin-gonic/gin"
 )
 
 func New(log *logger.Log, config *configs.Configuration, util *utils.Utils) *Middlewares {

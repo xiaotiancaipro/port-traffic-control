@@ -1,13 +1,14 @@
 package services
 
 import (
-	"github.com/florianl/go-tc"
-	"gorm.io/gorm"
 	"net"
 	"port-traffic-control/internal/configs"
 	"port-traffic-control/internal/logger"
 	"port-traffic-control/internal/utils"
 	"sync"
+
+	"github.com/florianl/go-tc"
+	"gorm.io/gorm"
 )
 
 type Services struct {

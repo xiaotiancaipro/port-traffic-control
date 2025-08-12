@@ -1,8 +1,9 @@
 package routers
 
 import (
-	"github.com/gin-gonic/gin"
 	"port-traffic-control/internal/controllers"
+
+	"github.com/gin-gonic/gin"
 )
 
 const (

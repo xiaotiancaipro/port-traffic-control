@@ -2,8 +2,9 @@ package utils
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func (ru *ResponseUtil) ParsingRequest(ctx *gin.Context, data any) bool {

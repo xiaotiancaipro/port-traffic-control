@@ -1,7 +1,6 @@
 package root
 
 import (
-	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
 	"port-traffic-control/internal/configs"
@@ -9,6 +8,8 @@ import (
 	"port-traffic-control/internal/utils"
 	"syscall"
 	"time"
+
+	"github.com/spf13/cobra"
 )
 
 type Stop struct{}

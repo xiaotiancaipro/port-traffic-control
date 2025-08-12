@@ -1,9 +1,10 @@
 package extensions
 
 import (
+	"net"
+
 	"github.com/florianl/go-tc"
 	"gorm.io/gorm"
-	"net"
 )
 
 type Extensions struct {

@@ -3,7 +3,6 @@ package srv
 import (
 	"context"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"port-traffic-control/internal/configs"
 	"port-traffic-control/internal/controllers"
@@ -12,6 +11,8 @@ import (
 	"port-traffic-control/internal/routers"
 	"port-traffic-control/internal/utils"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 func New(config *configs.Configuration, log *logger.Log, controller *controllers.Controllers, util *utils.Utils) *Srv {

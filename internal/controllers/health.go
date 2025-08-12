@@ -2,8 +2,9 @@ package controllers
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"port-traffic-control/internal/services"
+
+	"github.com/gin-gonic/gin"
 )
 
 func (hc *HealthController) Health(c *gin.Context) {

@@ -2,12 +2,13 @@ package extensions
 
 import (
 	"fmt"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 	"path/filepath"
 	"port-traffic-control/internal/configs"
 	"port-traffic-control/internal/models"
 	"time"
+
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 var Tables = map[string]any{
