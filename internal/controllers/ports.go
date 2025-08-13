@@ -127,7 +127,17 @@ func (pc *PortsController) Remove(c *gin.Context) {
 		return
 	}
 
-	ports, err := pc.PortsService.ListActivePortsByGroupID(groupUUID)
+	group, err := pc.GroupsService.GetByID(groupUUID)
+	if err != nil {
+		if err_ := pc.GroupsService.IsNotExists(err); err_ != nil {
+			pc.ResponseUtil.Error(c, "Error getting group")
+			return
+		}
+		pc.ResponseUtil.Error(c, "Group not found")
+		return
+	}
+
+	activePorts, err := pc.PortsService.ListActivePortsByGroupID(group.ID)
 	if err != nil {
 		if err_ := pc.PortsService.IsNotExists(err); err_ != nil {
 			pc.ResponseUtil.Error(c, "Error getting ports")
@@ -135,8 +145,8 @@ func (pc *PortsController) Remove(c *gin.Context) {
 		}
 	}
 
-	portToRecord := make(map[int32]uuid.UUID, len(ports))
-	for _, rec := range ports {
+	portToRecord := make(map[int32]uuid.UUID, len(activePorts))
+	for _, rec := range activePorts {
 		portToRecord[rec.Port] = rec.ID
 	}
 
