@@ -4,6 +4,8 @@ import (
 	"port-traffic-control/internal/logger"
 	"port-traffic-control/internal/services"
 	"port-traffic-control/internal/utils"
+
+	"github.com/google/uuid"
 )
 
 type Controllers struct {
@@ -30,6 +32,47 @@ type PortsController struct {
 	Log           *logger.Log
 	GroupsService *services.GroupsService
 	PortsService  *services.PortsService
-	StringUtil    *utils.StringUtil
 	ResponseUtil  *utils.ResponseUtil
+}
+
+// RequestBody
+
+type RequestBodyGroupsCreate struct {
+	Bandwidth  int32 `json:"bandwidth"`
+	PortMaxNum int32 `json:"portMaxNum"`
+}
+
+type RequestBodyGroupsGet struct {
+	GroupID string `json:"groupID"`
+}
+
+type RequestBodyGroupsDelete struct {
+	GroupID string `json:"groupID"`
+}
+
+type RequestBodyPorts struct {
+	GroupID  string  `json:"groupID"`
+	PortList []int32 `json:"portList"`
+}
+
+// ResponseBody
+
+type ResponseBodyGroupsCreate struct {
+	GroupID uuid.UUID `json:"groupId"`
+}
+
+type ResponseBodyGroupsGet struct {
+	Bandwidth  int32   `json:"bandwidth"`
+	PortMaxNum int32   `json:"PortMaxNum"`
+	PortList   []int32 `json:"portList"`
+}
+
+type ResponseBodyGroupsList struct {
+	Groups []uuid.UUID `json:"groups"`
+}
+
+type ResponseBodyPorts struct {
+	Flag           int8    `json:"flag"` // 0: partially successful; 1: successful
+	SuccessfulList []int32 `json:"successfulList"`
+	FailedList     []int32 `json:"failedList"`
 }

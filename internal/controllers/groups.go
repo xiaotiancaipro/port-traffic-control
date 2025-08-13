@@ -7,16 +7,7 @@ import (
 
 func (gc *GroupsController) Create(c *gin.Context) {
 
-	type requestBody struct {
-		Bandwidth  int32 `json:"bandwidth"`
-		PortMaxNum int32 `json:"portMaxNum"`
-	}
-
-	type responseBody struct {
-		GroupID uuid.UUID `json:"groupId"`
-	}
-
-	request := requestBody{}
+	request := RequestBodyGroupsCreate{}
 	if !gc.ResponseUtil.ParsingRequest(c, &request) {
 		return
 	}
@@ -43,24 +34,14 @@ func (gc *GroupsController) Create(c *gin.Context) {
 	}
 
 	gc.Log.Infof("Create groups successfully, GroupsID=%s", groups.ID)
-	gc.ResponseUtil.Success(c, "Create groups successfully", responseBody{GroupID: groups.ID})
+	gc.ResponseUtil.Success(c, "Create groups successfully", ResponseBodyGroupsCreate{GroupID: groups.ID})
 	return
 
 }
 
 func (gc *GroupsController) Get(c *gin.Context) {
 
-	type requestBody struct {
-		GroupID string `json:"groupID"`
-	}
-
-	type responseBody struct {
-		Bandwidth  int32   `json:"bandwidth"`
-		PortMaxNum int32   `json:"PortMaxNum"`
-		PortList   []int32 `json:"portList"`
-	}
-
-	request := requestBody{}
+	request := RequestBodyGroupsGet{}
 	if !gc.ResponseUtil.ParsingRequest(c, &request) {
 		return
 	}
@@ -94,7 +75,7 @@ func (gc *GroupsController) Get(c *gin.Context) {
 		portNums = append(portNums, p.Port)
 	}
 
-	gc.ResponseUtil.Success(c, "Get group successfully", responseBody{
+	gc.ResponseUtil.Success(c, "Get group successfully", ResponseBodyGroupsGet{
 		Bandwidth:  groups.Bandwidth,
 		PortMaxNum: groups.PortMaxNum,
 		PortList:   portNums,
@@ -105,11 +86,7 @@ func (gc *GroupsController) Get(c *gin.Context) {
 
 func (gc *GroupsController) Delete(c *gin.Context) {
 
-	type requestBody struct {
-		GroupID string `json:"groupID"`
-	}
-
-	request := requestBody{}
+	request := RequestBodyGroupsDelete{}
 	if !gc.ResponseUtil.ParsingRequest(c, &request) {
 		return
 	}
@@ -144,17 +121,13 @@ func (gc *GroupsController) Delete(c *gin.Context) {
 
 func (gc *GroupsController) List(c *gin.Context) {
 
-	type responseBody struct {
-		Groups []uuid.UUID `json:"groups"`
-	}
-
 	groups, err := gc.GroupsService.ListAll()
 	if err != nil {
 		if err_ := gc.GroupsService.IsNotExists(err); err_ != nil {
 			gc.ResponseUtil.Error(c, "Error getting group")
 			return
 		}
-		gc.ResponseUtil.Success(c, "List groups successfully", responseBody{Groups: nil})
+		gc.ResponseUtil.Success(c, "List groups successfully", ResponseBodyGroupsList{Groups: nil})
 		return
 	}
 
@@ -162,7 +135,7 @@ func (gc *GroupsController) List(c *gin.Context) {
 	for _, g := range groups {
 		groupsList = append(groupsList, g.ID)
 	}
-	gc.ResponseUtil.Success(c, "List groups successfully", responseBody{Groups: groupsList})
+	gc.ResponseUtil.Success(c, "List groups successfully", ResponseBodyGroupsList{Groups: groupsList})
 	return
 
 }

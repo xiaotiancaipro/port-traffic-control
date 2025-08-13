@@ -7,18 +7,7 @@ import (
 
 func (pc *PortsController) Add(c *gin.Context) {
 
-	type requestBody struct {
-		GroupID  string  `json:"groupID"`
-		PortList []int32 `json:"portList"`
-	}
-
-	type responseBody struct {
-		Flag           int8    `json:"flag"` // 0: partially successful; 1: successful
-		SuccessfulList []int32 `json:"successfulList"`
-		FailedList     []int32 `json:"failedList"`
-	}
-
-	request := requestBody{}
+	request := RequestBodyPorts{}
 	if !pc.ResponseUtil.ParsingRequest(c, &request) {
 		return
 	}
@@ -81,7 +70,7 @@ func (pc *PortsController) Add(c *gin.Context) {
 	}
 
 	if len(failedList) > 0 {
-		pc.ResponseUtil.Success(c, "Partial success", responseBody{
+		pc.ResponseUtil.Success(c, "Partial success", ResponseBodyPorts{
 			Flag:           0,
 			SuccessfulList: successfulList,
 			FailedList:     failedList,
@@ -89,7 +78,7 @@ func (pc *PortsController) Add(c *gin.Context) {
 		return
 	}
 
-	pc.ResponseUtil.Success(c, "Add ports successfully", responseBody{
+	pc.ResponseUtil.Success(c, "Add ports successfully", ResponseBodyPorts{
 		Flag:           1,
 		SuccessfulList: successfulList,
 		FailedList:     nil,
@@ -100,18 +89,7 @@ func (pc *PortsController) Add(c *gin.Context) {
 
 func (pc *PortsController) Remove(c *gin.Context) {
 
-	type requestBody struct {
-		GroupID  string  `json:"groupID"`
-		PortList []int32 `json:"portList"`
-	}
-
-	type responseBody struct {
-		Flag           int8    `json:"flag"` // 0: partially successful; 1: successful
-		SuccessfulList []int32 `json:"successfulList"`
-		FailedList     []int32 `json:"failedList"`
-	}
-
-	request := requestBody{}
+	request := RequestBodyPorts{}
 	if !pc.ResponseUtil.ParsingRequest(c, &request) {
 		return
 	}
@@ -166,7 +144,7 @@ func (pc *PortsController) Remove(c *gin.Context) {
 	}
 
 	if len(failedList) > 0 {
-		pc.ResponseUtil.Success(c, "Partial success", responseBody{
+		pc.ResponseUtil.Success(c, "Partial success", ResponseBodyPorts{
 			Flag:           0,
 			SuccessfulList: successfulList,
 			FailedList:     failedList,
@@ -174,7 +152,7 @@ func (pc *PortsController) Remove(c *gin.Context) {
 		return
 	}
 
-	pc.ResponseUtil.Success(c, "Add ports successfully", responseBody{
+	pc.ResponseUtil.Success(c, "Add ports successfully", ResponseBodyPorts{
 		Flag:           1,
 		SuccessfulList: successfulList,
 		FailedList:     nil,
