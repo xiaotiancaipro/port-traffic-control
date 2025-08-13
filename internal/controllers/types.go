@@ -22,11 +22,14 @@ type GroupsController struct {
 	Log           *logger.Log
 	GroupsService *services.GroupsService
 	TCService     *services.TCService
+	PortsService  *services.PortsService
 	ResponseUtil  *utils.ResponseUtil
 }
 
 type PortsController struct {
-	Log          *logger.Log
-	PortsService *services.PortsService
-	ResponseUtil *utils.ResponseUtil
+	Log           *logger.Log
+	GroupsService *services.GroupsService
+	PortsService  *services.PortsService
+	StringUtil    *utils.StringUtil
+	ResponseUtil  *utils.ResponseUtil
 }

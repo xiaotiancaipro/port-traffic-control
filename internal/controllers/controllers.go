@@ -17,12 +17,15 @@ func New(log *logger.Log, service *services.Services, util *utils.Utils) *Contro
 			Log:           log,
 			GroupsService: service.GroupsService,
 			TCService:     service.TCService,
+			PortsService:  service.PortsService,
 			ResponseUtil:  util.ResponseUtil,
 		},
 		PortsController: &PortsController{
-			Log:          log,
-			PortsService: service.PortsService,
-			ResponseUtil: util.ResponseUtil,
+			Log:           log,
+			GroupsService: service.GroupsService,
+			PortsService:  service.PortsService,
+			StringUtil:    util.StringUtil,
+			ResponseUtil:  util.ResponseUtil,
 		},
 	}
 }

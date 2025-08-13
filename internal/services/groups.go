@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"port-traffic-control/internal/models"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -89,4 +90,43 @@ func (gs *GroupsService) UpdateStatus(groups models.Groups, status int8) error {
 
 func (gs *GroupsService) Delete(groups models.Groups) error {
 	return gs.UpdateStatus(groups, 0)
+}
+
+func (gs *GroupsService) GetByID(id uuid.UUID) (groups models.Groups, err error) {
+	tx := gs.DB.
+		Model(&models.Groups{}).
+		Where(&models.Groups{
+			ID:     id,
+			Status: 1,
+		}).
+		First(&groups)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			err = GroupNotFoundError
+			return
+		}
+		err = fmt.Errorf("database query failed, Error=%v", tx.Error)
+		gs.Log.Error(err)
+		return
+	}
+	return
+}
+
+func (gs *GroupsService) ListAll() (groups []models.Groups, err error) {
+	tx := gs.DB.
+		Model(&models.Groups{}).
+		Where(&models.Groups{
+			Status: 1,
+		}).
+		Find(&groups)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			err = GroupNotFoundError
+			return
+		}
+		err = fmt.Errorf("database query failed, Error=%v", tx.Error)
+		gs.Log.Error(err)
+		return
+	}
+	return
 }

@@ -27,7 +27,7 @@ type HealthService struct {
 type GroupsService struct {
 	Log  *logger.Log
 	DB   *gorm.DB
-	Lock sync.RWMutex
+	Lock *sync.RWMutex
 }
 
 type PortsService struct {
