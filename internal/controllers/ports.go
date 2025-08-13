@@ -33,7 +33,7 @@ func (pc *PortsController) Add(c *gin.Context) {
 		return
 	}
 
-	activePorts, err := pc.PortsService.ListActivePorts()
+	exists, err := pc.PortsService.ListActivePorts()
 	if err != nil {
 		if err_ := pc.PortsService.IsNotExists(err); err_ != nil {
 			pc.ResponseUtil.Error(c, "Error getting ports")
@@ -41,47 +41,79 @@ func (pc *PortsController) Add(c *gin.Context) {
 		}
 	}
 
-	activePortsSet := make(map[int32]struct{}, len(activePorts))
-	for _, port := range activePorts {
-		activePortsSet[port.Port] = struct{}{}
+	existsMap := make(map[int32]struct{}, len(exists))
+	for _, port := range exists {
+		existsMap[port.Port] = struct{}{}
 	}
 
-	var addList []int32
+	var (
+		num        int32 = group.PortMaxNum - group.Usage
+		usage      int32 = group.Usage
+		fixUsage   int32 = 0
+		successful []int32
+		failed     []ResponseBodyPortsFailedItem
+	)
 	for _, port := range request.PortList {
-		if _, ok := activePortsSet[port]; ok {
+		if _, ok := existsMap[port]; ok {
+			failed = append(failed, ResponseBodyPortsFailedItem{
+				Port:  port,
+				Error: "The port already exists",
+			})
 			continue
 		}
-		addList = append(addList, port)
-	}
-
-	var successfulList, failedList []int32
-	for _, port := range addList {
+		if num <= 0 {
+			failed = append(failed, ResponseBodyPortsFailedItem{
+				Port:  port,
+				Error: "The maximum number of ports that can be accommodated by the group has been exceeded",
+			})
+			continue
+		}
 		ports, err_ := pc.PortsService.Create(group.ID, port)
 		if err_ != nil {
-			failedList = append(failedList, port)
-			pc.Log.Errorf("Error adding port %d", port)
+			failed = append(failed, ResponseBodyPortsFailedItem{
+				Port:  port,
+				Error: err_.Error(),
+			})
+			pc.Log.Errorf("Error adding port, Port=%d", port)
 			continue
 		}
 		// TODO tc add child class
-		if err_ := pc.PortsService.UpdateStatus(ports, 1); err_ != nil {
-			return
+		usage++
+		if err_ = pc.GroupsService.UpdateUsage(group, usage); err_ != nil {
+			failed = append(failed, ResponseBodyPortsFailedItem{
+				Port:  port,
+				Error: err_.Error(),
+			})
+			pc.Log.Errorf("Error update usage, Port=%d", port)
+			continue
 		}
-		successfulList = append(successfulList, port)
+		if err_ = pc.PortsService.UpdateStatus(ports, 1); err_ != nil {
+			fixUsage++
+			failed = append(failed, ResponseBodyPortsFailedItem{
+				Port:  port,
+				Error: err_.Error(),
+			})
+			pc.Log.Errorf("Error update port status, Port=%d", port)
+			continue
+		}
+		successful = append(successful, port)
+		existsMap[port] = struct{}{}
+		num--
 	}
 
-	if len(failedList) > 0 {
-		pc.ResponseUtil.Success(c, "Partial success", ResponseBodyPorts{
-			Flag:           0,
-			SuccessfulList: successfulList,
-			FailedList:     failedList,
-		})
-		return
+	if fixUsage > 0 {
+		if err_ := pc.GroupsService.UpdateUsage(group, usage-fixUsage); err_ != nil {
+			pc.Log.Errorf(
+				"The usage correction failed and needs to be corrected manually, GroupID=%s, UsageFixd=%d",
+				group.ID,
+				group.Usage-fixUsage,
+			)
+		}
 	}
 
-	pc.ResponseUtil.Success(c, "Add ports successfully", ResponseBodyPorts{
-		Flag:           1,
-		SuccessfulList: successfulList,
-		FailedList:     nil,
+	pc.ResponseUtil.Success(c, "Successfully", ResponseBodyPorts{
+		Successful: successful,
+		Failed:     failed,
 	})
 	return
 
@@ -144,7 +176,7 @@ func (pc *PortsController) Remove(c *gin.Context) {
 	}
 
 	if len(failedList) > 0 {
-		pc.ResponseUtil.Success(c, "Partial success", ResponseBodyPorts{
+		pc.ResponseUtil.Success(c, "Partial success", ResponseBodyPortsOld{
 			Flag:           0,
 			SuccessfulList: successfulList,
 			FailedList:     failedList,
@@ -152,7 +184,7 @@ func (pc *PortsController) Remove(c *gin.Context) {
 		return
 	}
 
-	pc.ResponseUtil.Success(c, "Add ports successfully", ResponseBodyPorts{
+	pc.ResponseUtil.Success(c, "Add ports successfully", ResponseBodyPortsOld{
 		Flag:           1,
 		SuccessfulList: successfulList,
 		FailedList:     nil,
