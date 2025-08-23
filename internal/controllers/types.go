@@ -71,12 +71,6 @@ type ResponseBodyGroupsList struct {
 	Groups []uuid.UUID `json:"groups"`
 }
 
-type ResponseBodyPortsOld struct {
-	Flag           int8    `json:"flag"` // 0: partially successful; 1: successful
-	SuccessfulList []int32 `json:"successfulList"`
-	FailedList     []int32 `json:"failedList"`
-}
-
 type ResponseBodyPorts struct {
 	Successful []int32                       `json:"successful"`
 	Failed     []ResponseBodyPortsFailedItem `json:"failed"`
