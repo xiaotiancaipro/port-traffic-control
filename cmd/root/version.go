@@ -2,7 +2,7 @@ package root
 
 import "github.com/spf13/cobra"
 
-const version = "0.0.3"
+const version = "0.0.4"
 
 type Version struct{}
 
