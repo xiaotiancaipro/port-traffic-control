@@ -65,25 +65,20 @@ func (gs *GroupsService) Create(bandwidth int32, portMaxNum int32) (groups model
 
 }
 
-func (gs *GroupsService) UpdateUsage(groups models.Groups, usage int32) error {
-	err := gs.DB.Transaction(func(tx *gorm.DB) error {
-		tx_ := tx.
-			Model(&models.Groups{}).
-			Where(&models.Groups{
-				ID: groups.ID,
-			}).
-			Select("usage").
-			Updates(&models.Groups{
-				Usage: usage,
-			})
-		if err_ := tx_.Error; err_ != nil {
-			return fmt.Errorf("failed to update data, Errors=%v", err_)
-		}
-		return nil
-	})
-	if err != nil {
-		gs.Log.Error(err)
-		return err
+func (gs *GroupsService) UpdateUsageInTX(tx *gorm.DB, groups models.Groups, usage int32) error {
+	tx_ := tx.
+		Model(&models.Groups{}).
+		Where(&models.Groups{
+			ID: groups.ID,
+		}).
+		Select("usage").
+		Updates(&models.Groups{
+			Usage: usage,
+		})
+	if err_ := tx_.Error; err_ != nil {
+		err_ = fmt.Errorf("failed to update data, Errors=%v", err_)
+		gs.Log.Error(err_)
+		return err_
 	}
 	return nil
 }

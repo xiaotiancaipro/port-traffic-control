@@ -1,10 +1,9 @@
 package controllers
 
 import (
-	"port-traffic-control/internal/models"
-
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 func (pc *PortsController) Add(c *gin.Context) {
@@ -28,9 +27,11 @@ func (pc *PortsController) Add(c *gin.Context) {
 	group, err := pc.GroupsService.GetByID(groupUUID)
 	if err != nil {
 		if err_ := pc.GroupsService.IsNotExists(err); err_ != nil {
+			pc.Log.Errorf("Error getting group")
 			pc.ResponseUtil.Error(c, "Error getting group")
 			return
 		}
+		pc.Log.Errorf("Group not found")
 		pc.ResponseUtil.Error(c, "Group not found")
 		return
 	}
@@ -38,6 +39,7 @@ func (pc *PortsController) Add(c *gin.Context) {
 	exists, err := pc.PortsService.ListActivePorts()
 	if err != nil {
 		if err_ := pc.PortsService.IsNotExists(err); err_ != nil {
+			pc.Log.Errorf("Error getting ports")
 			pc.ResponseUtil.Error(c, "Error getting ports")
 			return
 		}
@@ -48,63 +50,60 @@ func (pc *PortsController) Add(c *gin.Context) {
 		existsMap[port.Port] = struct{}{}
 	}
 
-	var (
-		num        = group.PortMaxNum - group.Usage
-		usage      = group.Usage
-		successful []int32
-		failed     []ResponseBodyPortsFailedItem
-	)
+	num := group.PortMaxNum - group.Usage
+	usage := group.Usage
+	successful := make([]int32, 0)
+	failed := make([]ResponseBodyPortsFailedItem, 0)
+	failedItem := func(port_ int32, err_ string) ResponseBodyPortsFailedItem {
+		return ResponseBodyPortsFailedItem{
+			Port:  port_,
+			Error: err_,
+		}
+	}
 	for _, port := range request.PortList {
+
 		if num <= 0 {
-			failed = append(failed, ResponseBodyPortsFailedItem{
-				Port:  port,
-				Error: "Available quantity has been exhausted",
-			})
+			failed = append(failed, failedItem(port, "Available quantity has been exhausted"))
 			continue
 		}
+
 		if _, ok := existsMap[port]; ok {
-			failed = append(failed, ResponseBodyPortsFailedItem{
-				Port:  port,
-				Error: "The port already exists",
-			})
+			failed = append(failed, failedItem(port, "The port already exists"))
 			continue
 		}
-		ports, err_ := pc.PortsService.Create(group.ID, port)
-		if err_ != nil {
-			failed = append(failed, ResponseBodyPortsFailedItem{
-				Port:  port,
-				Error: err_.Error(),
-			})
-			pc.Log.Errorf("Error adding port, Port=%d", port)
-			continue
-		}
-		// TODO tc add child class
-		if err_ = pc.PortsService.UpdateStatus(ports, 1); err_ != nil {
-			// TODO tc remove child class
-			failed = append(failed, ResponseBodyPortsFailedItem{
-				Port:  port,
-				Error: err_.Error(),
-			})
-			pc.Log.Errorf("Error update port status, Port=%d", port)
-			continue
-		}
-		usage++
-		if err_ = pc.GroupsService.UpdateUsage(group, usage); err_ != nil {
-			usage--
-			// TODO tc remove child class
-			if err__ := pc.PortsService.UpdateStatus(ports, 0); err__ != nil {
-				pc.Log.Errorf("Error[Ser] update port status, Port=%d", port)
+
+		if err = pc.DB.Transaction(func(tx *gorm.DB) error {
+
+			if err_ := pc.PortsService.CreateInTx(tx, group.ID, port); err_ != nil {
+				pc.Log.Errorf("Error adding port, Port=%d, Error=%v", port, err_)
+				return err_
 			}
-			failed = append(failed, ResponseBodyPortsFailedItem{
-				Port:  port,
-				Error: err_.Error(),
-			})
-			pc.Log.Errorf("Error update usage, Port=%d", port)
-			continue
+
+			usage++
+			if err_ := pc.GroupsService.UpdateUsageInTX(tx, group, usage); err_ != nil {
+				usage--
+				pc.Log.Errorf("Error update usage, Port=%d, Error=%v", port, err_)
+				return err_
+			}
+
+			parentMinor := uint32(group.Handle)
+			childMinor := uint32(port)
+			rateCeil := uint32(group.Bandwidth)
+			if err_ := pc.TCService.CreateChildClass(parentMinor, childMinor, 1, rateCeil); err_ != nil {
+				usage--
+				pc.Log.Errorf("Error create tc child class, Port=%d, Error=%v", port, err_)
+				return err_
+			}
+
+			successful = append(successful, port)
+			existsMap[port] = struct{}{}
+			num--
+			return nil
+
+		}); err != nil {
+			failed = append(failed, failedItem(port, err.Error()))
 		}
-		successful = append(successful, port)
-		existsMap[port] = struct{}{}
-		num--
+
 	}
 
 	pc.ResponseUtil.Success(c, "Successfully", ResponseBodyPorts{
@@ -136,9 +135,11 @@ func (pc *PortsController) Remove(c *gin.Context) {
 	group, err := pc.GroupsService.GetByID(groupUUID)
 	if err != nil {
 		if err_ := pc.GroupsService.IsNotExists(err); err_ != nil {
+			pc.Log.Errorf("Error getting group")
 			pc.ResponseUtil.Error(c, "Error getting group")
 			return
 		}
+		pc.Log.Errorf("Group not found")
 		pc.ResponseUtil.Error(c, "Group not found")
 		return
 	}
@@ -146,6 +147,7 @@ func (pc *PortsController) Remove(c *gin.Context) {
 	exists, err := pc.PortsService.ListActivePortsByGroupID(group.ID)
 	if err != nil {
 		if err_ := pc.PortsService.IsNotExists(err); err_ != nil {
+			pc.Log.Errorf("Error getting ports")
 			pc.ResponseUtil.Error(c, "Error getting ports")
 			return
 		}
@@ -156,52 +158,57 @@ func (pc *PortsController) Remove(c *gin.Context) {
 		existsMap[port.Port] = port.ID
 	}
 
-	var (
-		usage      = group.Usage
-		successful []int32
-		failed     []ResponseBodyPortsFailedItem
-	)
+	usage := group.Usage
+	successful := make([]int32, 0)
+	failed := make([]ResponseBodyPortsFailedItem, 0)
+	failedItem := func(port_ int32, err_ string) ResponseBodyPortsFailedItem {
+		return ResponseBodyPortsFailedItem{
+			Port:  port_,
+			Error: err_,
+		}
+	}
 	for _, port := range request.PortList {
+
 		portID, ok := existsMap[port]
 		if !(ok && portID != uuid.Nil) {
-			failed = append(failed, ResponseBodyPortsFailedItem{
-				Port:  port,
-				Error: "The port not exists",
-			})
+			failed = append(failed, failedItem(port, "The port not exists"))
 			continue
 		}
-		// TODO tc remove child class
-		if err_ := pc.PortsService.DeleteByID(portID); err_ != nil {
-			// TODO tc add child class
-			failed = append(failed, ResponseBodyPortsFailedItem{
-				Port:  port,
-				Error: err_.Error(),
-			})
-			pc.Log.Errorf("Error remove port, Port=%d", port)
-			continue
-		}
-		usage--
-		if err_ := pc.GroupsService.UpdateUsage(group, usage); err_ != nil {
-			usage++
-			// TODO tc add child class
-			if err__ := pc.PortsService.UpdateStatus(models.Ports{ID: portID}, 1); err__ != nil {
-				pc.Log.Errorf("Error[Ser] activate port, Port=%d", port)
+
+		if err = pc.DB.Transaction(func(tx *gorm.DB) error {
+
+			if err_ := pc.PortsService.DeleteByIDInTx(tx, portID); err_ != nil {
+				pc.Log.Errorf("Error remove port, Port=%d", port)
+				return err_
 			}
-			failed = append(failed, ResponseBodyPortsFailedItem{
-				Port:  port,
-				Error: err_.Error(),
-			})
-			pc.Log.Errorf("Error update usage, Port=%d", port)
-			continue
+
+			usage--
+			if err_ := pc.GroupsService.UpdateUsageInTX(tx, group, usage); err_ != nil {
+				usage++
+				pc.Log.Errorf("Error update usage, Port=%d", port)
+				return err_
+			}
+
+			parentMinor := uint32(group.Handle)
+			childMinor := uint32(port)
+			if err_ := pc.TCService.DeleteChildClass(parentMinor, childMinor); err_ != nil {
+				pc.Log.Errorf("Error delete tc child class, Port=%d", port)
+				return err_
+			}
+
+			successful = append(successful, port)
+			existsMap[port] = uuid.Nil
+			return nil
+
+		}); err != nil {
+			failed = append(failed, failedItem(port, err.Error()))
 		}
-		successful = append(successful, port)
-		existsMap[port] = uuid.Nil
+
 	}
 
 	pc.ResponseUtil.Success(c, "Successfully", ResponseBodyPorts{
 		Successful: successful,
 		Failed:     failed,
 	})
-	return
 
 }

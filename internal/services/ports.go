@@ -18,56 +18,45 @@ func (ps *PortsService) IsNotExists(err error) error {
 	return err
 }
 
-func (ps *PortsService) Create(groupID uuid.UUID, port int32) (ports models.Ports, err error) {
-	ports = models.Ports{
-		GroupID: groupID,
-		Port:    port,
-	}
-	err = ps.DB.Transaction(func(tx *gorm.DB) error {
-		tx_ := tx.
-			Model(&models.Ports{}).
-			Create(&ports)
-		if err_ := tx_.Error; err_ != nil {
-			return fmt.Errorf("failed to insert data, Errors=%v", err_)
-		}
-		return nil
-	})
-	if err != nil {
-		ps.Log.Error(err)
-		return
-	}
-	return
-}
-
-func (ps *PortsService) UpdateStatus(ports models.Ports, status int8) error {
-	err := ps.DB.Transaction(func(tx *gorm.DB) error {
-		tx_ := tx.
-			Model(&models.Ports{}).
-			Where(&models.Ports{
-				ID: ports.ID,
-			}).
-			Select("status").
-			Updates(&models.Ports{
-				Status: status,
-			})
-		if err_ := tx_.Error; err_ != nil {
-			return fmt.Errorf("failed to update data, Errors=%v", err_)
-		}
-		return nil
-	})
-	if err != nil {
-		ps.Log.Error(err)
-		return err
+func (ps *PortsService) CreateInTx(tx *gorm.DB, groupID uuid.UUID, port int32) error {
+	op := tx.
+		Model(&models.Ports{}).
+		Create(&models.Ports{
+			GroupID: groupID,
+			Port:    port,
+		})
+	if err_ := op.Error; err_ != nil {
+		err_ = fmt.Errorf("failed to insert data, Errors=%v", err_)
+		ps.Log.Error(err_)
+		return err_
 	}
 	return nil
 }
 
-func (ps *PortsService) Delete(ports models.Ports) error {
-	return ps.UpdateStatus(ports, 0)
+func (ps *PortsService) UpdateStatusInTx(tx *gorm.DB, ports models.Ports, status int8) error {
+	tx_ := tx.
+		Model(&models.Ports{}).
+		Where(&models.Ports{
+			ID: ports.ID,
+		}).
+		Select("status").
+		Updates(&models.Ports{
+			Status: status,
+		})
+	if err_ := tx_.Error; err_ != nil {
+		err_ = fmt.Errorf("failed to update data, Errors=%v", err_)
+		ps.Log.Error(err_)
+		return err_
+	}
+	return nil
 }
 
-func (ps *PortsService) DeleteByID(id uuid.UUID) error {
-	return ps.Delete(models.Ports{ID: id})
+func (ps *PortsService) DeleteInTx(tx *gorm.DB, ports models.Ports) error {
+	return ps.UpdateStatusInTx(tx, ports, 0)
+}
+
+func (ps *PortsService) DeleteByIDInTx(tx *gorm.DB, id uuid.UUID) error {
+	return ps.DeleteInTx(tx, models.Ports{ID: id})
 }
 
 func (ps *PortsService) ListActivePorts() (ports []models.Ports, err error) {

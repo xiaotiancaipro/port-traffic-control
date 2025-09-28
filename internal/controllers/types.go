@@ -6,6 +6,7 @@ import (
 	"port-traffic-control/internal/utils"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type Controllers struct {
@@ -30,8 +31,10 @@ type GroupsController struct {
 
 type PortsController struct {
 	Log           *logger.Log
+	DB            *gorm.DB
 	GroupsService *services.GroupsService
 	PortsService  *services.PortsService
+	TCService     *services.TCService
 	ResponseUtil  *utils.ResponseUtil
 }
 

@@ -8,8 +8,6 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// CreateParentClass creates a top-level HTB class under the root qdisc.
-// The provided id is used as the minor id of the class. The major must match the root qdisc.
 func (tcs *TCService) CreateParentClass(minor uint32, rate uint32) error {
 	rate = tcs.MbpsToBps(rate)
 	parentClass := tc.Object{
@@ -53,7 +51,6 @@ func (tcs *TCService) CreateParentClass(minor uint32, rate uint32) error {
 	return nil
 }
 
-// CreateChildClass creates a child HTB class under the specified parent class (by parentMinor).
 func (tcs *TCService) CreateChildClass(parentMinor uint32, childMinor uint32, rate uint32, rateCeil uint32) error {
 
 	rate = tcs.MbpsToBps(rate)
@@ -121,6 +118,38 @@ func (tcs *TCService) CreateChildClass(parentMinor uint32, childMinor uint32, ra
 
 	return nil
 
+}
+
+func (tcs *TCService) DeleteChildClass(parentMinor uint32, childMinor uint32) error {
+
+	// First remove the fq_codel qdisc attached to the child class
+	fqQdisc := tc.Object{
+		Msg: tc.Msg{
+			Family:  unix.AF_UNSPEC,
+			Ifindex: uint32(tcs.Iface.Index),
+			Handle:  core.BuildHandle(0x0, 0x0),
+			Parent:  core.BuildHandle(parentMinor, childMinor),
+		},
+	}
+	if err := tcs.TC.Qdisc().Delete(&fqQdisc); err != nil {
+		// Log and continue. If qdisc is missing, deleting class might still succeed.
+		tcs.Log.Warningf("failed to delete fq_codel qdisc for %x:%x, Error=%v", parentMinor, childMinor, err)
+	}
+
+	class := tc.Object{
+		Msg: tc.Msg{
+			Family:  unix.AF_UNSPEC,
+			Ifindex: uint32(tcs.Iface.Index),
+			Handle:  core.BuildHandle(parentMinor, childMinor),
+			Parent:  core.BuildHandle(0x1, parentMinor),
+		},
+	}
+	if err := tcs.TC.Class().Delete(&class); err != nil {
+		err = fmt.Errorf("delete child class failed, Error=%v", err)
+		tcs.Log.Error(err)
+		return err
+	}
+	return nil
 }
 
 func (tcs *TCService) MbpsToBps(mbps uint32) uint32 {

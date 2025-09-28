@@ -1,30 +1,36 @@
 package controllers
 
 import (
+	"port-traffic-control/internal/extensions"
 	"port-traffic-control/internal/logger"
 	"port-traffic-control/internal/services"
 	"port-traffic-control/internal/utils"
 )
 
-func New(log *logger.Log, service *services.Services, util *utils.Utils) *Controllers {
+func New(log *logger.Log, ext *extensions.Extensions, service *services.Services, util *utils.Utils) *Controllers {
+	healthController := &HealthController{
+		Log:           log,
+		HealthService: service.HealthService,
+		ResponseUtil:  util.ResponseUtil,
+	}
+	groupsController := &GroupsController{
+		Log:           log,
+		GroupsService: service.GroupsService,
+		TCService:     service.TCService,
+		PortsService:  service.PortsService,
+		ResponseUtil:  util.ResponseUtil,
+	}
+	portsController := &PortsController{
+		Log:           log,
+		DB:            ext.Database,
+		GroupsService: service.GroupsService,
+		PortsService:  service.PortsService,
+		TCService:     service.TCService,
+		ResponseUtil:  util.ResponseUtil,
+	}
 	return &Controllers{
-		HealthController: &HealthController{
-			Log:           log,
-			HealthService: service.HealthService,
-			ResponseUtil:  util.ResponseUtil,
-		},
-		GroupsController: &GroupsController{
-			Log:           log,
-			GroupsService: service.GroupsService,
-			TCService:     service.TCService,
-			PortsService:  service.PortsService,
-			ResponseUtil:  util.ResponseUtil,
-		},
-		PortsController: &PortsController{
-			Log:           log,
-			GroupsService: service.GroupsService,
-			PortsService:  service.PortsService,
-			ResponseUtil:  util.ResponseUtil,
-		},
+		HealthController: healthController,
+		GroupsController: groupsController,
+		PortsController:  portsController,
 	}
 }
